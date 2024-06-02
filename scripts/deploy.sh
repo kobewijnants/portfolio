@@ -25,8 +25,6 @@ fi
 distro=$(awk -F= '/^NAME/{print $2}' /etc/os-release | awk '{print tolower($0)}')
 print_blue $distro
 
-current_path=$(pwd)
-
 # Check if apache is installed, if not do it
 if command -v apache2 &> /dev/null
 then
@@ -37,13 +35,13 @@ then
 else
     case $distro in
         *arch*|*manjaro*)
-            print_green "Arch Linux detected"
+            print_green "Arch based OS detected"
             pacman -Sy apache
             ;;
         *debian*|*ubuntu*|*pop*|*mint*)
-            print_green "Debian detected"
-            apt-get update
-            apt-get install apache2
+            print_green "Debian based OS detected"
+            apt-get update -y
+            apt-get install apache2 -y
             ;;
         *fedora*)
             print_green "Fedora detected"
@@ -117,7 +115,14 @@ npm install
 npm run build
 
 # Find the apache root directory
-apache_root_dir=$(grep -E '^DocumentRoot\s+(.+)$' /etc/httpd/conf/httpd.conf | cut -d' ' -f2- | sed 's/^"//; s/"$//' || grep -E '^DocumentRoot\s+(.+)$' /etc/apache2/apache2.conf | cut -d' ' -f2- | sed 's/^"//; s/"$//')
+if [ -d "/etc/httpd/conf" ]; then
+    apache_root_dir=$(grep -E '^DocumentRoot\s+(.+)$' /etc/httpd/conf/httpd.conf | cut -d' ' -f2- | sed 's/^"//; s/"$//')
+elif [ -d "/etc/apache2" ]; then
+    apache_root_dir=$(grep -E '^DocumentRoot\s+(.+)$' /etc/apache2/apache2.conf | cut -d' ' -f2- | sed 's/^"//; s/"$//')
+else 
+    print_red "Apache root directory not found"
+    exit 1
+fi
 
 # Copy the build to apache
 rm -rf $apache_root_dir/*
